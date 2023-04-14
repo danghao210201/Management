@@ -158,7 +158,7 @@ export default function List({ navigation }) {
                           </Text>
 
                           <Text style={styles.itemBodyStyle}>
-                            Chương trádasdình:{" "}
+                            Chương trình:{" "}
                             {dataChuongTrinh.map((i) => {
                               if (i.value === item.idChuongTrinh) return i.label;
                             })}
