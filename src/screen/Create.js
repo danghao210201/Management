@@ -1,49 +1,59 @@
 import React, { useState, useEffect, useRef } from "react";
+import { ScrollView, Toast } from 'native-base';
 import {
-  Box,
-  VStack,
   Text,
+  Link,
+  HStack,
   Center,
-  Input,
+  Heading,
+  Switch,
+  useColorMode,
+  NativeBaseProvider,
+  extendTheme,
+  VStack,
+  Box,
   Button,
-  IconButton,
-  Divider,
-  Icon,
-  Skeleton,
-  TextArea,
-  AlertDialog,
-  FlatList, useToast, Menu
-} from "native-base";
-import { Feather, AntDesign, Ionicons, Entypo } from "@expo/vector-icons";
-import {
-  View,
-  ScrollView,
+  Modal,
+  FormControl,
+  Input,
+  Container,
+  Stack,
+  WarningOutlineIcon,
+  Image,
+  useToast,
   Alert,
+  Collapse,
+  IconButton,
+  CloseIcon,
+  Select,
+  CheckIcon,
+  Entypo,
+  TextArea,
   Pressable,
-  SafeAreaView,
-  StyleSheet,
-  TouchableOpacity,
-  useWindowDimensions,
-} from "react-native";
-// import DocumentPicker from "react-native-document-picker";
+  Icon, Menu
+} from "native-base";
+import { Platform, StyleSheet, View, SafeAreaView, FlatList, TextInput } from "react-native";
+import { Dropdown, MultiSelect } from "react-native-element-dropdown";
+import { Ionicons } from '@expo/vector-icons';
+import { AntDesign } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import {
   actions,
   RichEditor,
   RichToolbar,
 } from "react-native-pell-rich-editor";
+import { TouchableOpacity } from "react-native-gesture-handler";
+// Define the config
+const config = {
+  useSystemColorMode: false,
+  initialColorMode: "dark",
+};
 
-import RenderHtml from "react-native-render-html";
-import * as ImagePicker from "expo-image-picker";
-import Moment from "moment";
-import { Dropdown, MultiSelect } from "react-native-element-dropdown";
+// extend the theme
+export const theme = extendTheme({ config });
 
-
-
-export default function DetailList({ route, navigation }) {
+export default function PostPage({ route, navigation }) {
   const { id } = route.params;
-  // First Run
-  const [dataList, setDataList] = useState(null);
-
   const dataTheLoai = [
     { value: 7, label: "Ghi nhanh" },
     { value: 9, label: "Tin trong tỉnh" },
@@ -199,76 +209,48 @@ export default function DetailList({ route, navigation }) {
     { label: "Võ Văn Quý - Phó Giám đốc", value: "20095", key: 20095 },
     { label: "Vũ Xuân Trường - Giám đốc", value: "20126", key: 20126 },
   ]
-  const cancelSend = React.useRef();
-  const [isOpenSend, setisOpenSend] = React.useState(false);
-  const onCloseSend = () => setisOpenSend(false);
-  const Toast = useToast();
-  const cancelRef = React.useRef();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isOpen, setIsOpen] = React.useState(false);
-  const onClose = () => setIsOpen(false);
-  const [selectedTheLoai, setSelectedTheLoai] = useState(null);
-  const [selectedChuongTrinh, setSelectedChuongTrinh] = useState(null);
-  const [selectedThucHien, setselectedThucHien] = useState([]);
-  const [selectedQuayPhim, setselectedQuayPhim] = useState([]);
-  const [selectedLinhVuc, setselectedLinhVuc] = useState([]);
-  const [dataLinhVuc, setdataLinhVuc] = useState(null);
+  const richText = useRef();
+  const [descHTML, setDescHTML] = useState("");
+  const [showDescError, setShowDescError] = useState(false);
+  const richTextHandle = (descriptionText) => {
+    if (descriptionText) {
+      setShowDescError(false);
+      setDescHTML(descriptionText);
+    } else {
+      setShowDescError(true);
+      setDescHTML("");
+    }
+  };
+  const [TieuDe, setTieuDeTin] = useState('');
+  const [NoiDung, setNoiDungTin] = useState('');
+  const [trangThai, settrangThai] = useState('');
+  const [chuongTrinh, setchuongTrinh] = useState('');
+  const [tacGia, settacGia] = useState('');
+  const [theLoai, settheLoai] = useState('');
+  const [maLV, setmaLV] = useState('');
+  const [quayPhim, setquayPhim] = useState('');
+  const [DuongDan, setDuongDan] = useState('');
+  const [FileUp, setfileUpload] = useState('');
+  const [errorMessage, setErrorMessage] = useState(null);
   const [shouldOverlapWithTrigger] = React.useState(false);
   const [position, setPosition] = React.useState("auto");
-
-  // const [dataTheLoai, setDataTheLoai] = useState(null);
-  const [ketqua, setKetqua] = useState('');
-  const [nguoiThucHien, setnguoiThucHien] = useState('');
-  const [QuayPhim, setQuayPhim] = useState('');
+  const [createData, setcreateData] = useState([]);
+  const [dataList, setDataList] = useState([]);
   const page = 20;
   const current = 1;
   const idUser = 20015;
-  const iD = null;
-  const { width } = useWindowDimensions();
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
-
-  //  2nd Run
   const onRefresh = () => {
     _fetchData();
   };
+
   useEffect(() => {
     _fetchData();
-    _getTheLoai();
-  }, [navigation]);
-
-
-
-  const _getTheLoai = async () => {
-    return fetch(
-      `https://testsoft.tayninh.gov.vn/api/TheLoai/GetTheLoai`,
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6IjIwMDE1IiwidW5pcXVlX25hbWUiOiJOZ3V54buFbiBWxINuIFZpw6puIiwicm9sZSI6InBob25ndmllbiIsIm5iZiI6MTY4MjI2MDgwNCwiZXhwIjoxNjgyNDMzNjA0LCJpYXQiOjE2ODIyNjA4MDR9.EUpAl2aCT8J_2wtyQxxCXMPtYlhNVrYCT9SisRl0Y_Q",
-        },
-      }
-    )
-      .then((response) => response.json())
-
-      .then((result) => {
-        // du lieu tu API
-        setSelectedTheLoai(result);
-      })
-      .catch((error) => {
-        // console.log("error", error)
-      });
-  };
+  }, [])
 
   const _fetchData = async () => {
-
     return fetch(
-      `https://testsoft.tayninh.gov.vn/api/BanTin/GetBanTin?current=${current}&IDUser=${idUser}&pageSize=${page}&Menu=DANGSOAN&ID=${JSON.stringify(
-        id
-      )}`,
+      `https://testsoft.tayninh.gov.vn/api/BanTin/GetBanTin?current=${current}&pageSize=${page}&Menu=DANGSOAN&IDUser=${idUser}`,
       {
         method: "POST",
         headers: {
@@ -279,36 +261,35 @@ export default function DetailList({ route, navigation }) {
         },
       }
     )
+
+
       .then((response) => response.json())
-
       .then((result) => {
-        // du lieu tu API
-
-        // console.log(result.data)
         setDataList(result.data);
-        setSelectedTheLoai(result.data[0].idTheLoai);
-        setSelectedChuongTrinh(result.data[0].idChuongTrinh);
-        setselectedLinhVuc(result.data[0].maLinhVuc);
-        setselectedThucHien(result.data[0].idTacGia);
-        setselectedQuayPhim(result.data[0].quayPhim);
-        setKetqua(ketqua);
-        setnguoiThucHien(nguoiThucHien);
-        setQuayPhim(QuayPhim);
-
       })
-      .catch((error) => {
-        // console.log("error", error)
-      });
+      .catch((error) => console.log("error", error));
   };
 
-
-  const _deleteData = async (id) => {
-    // console.log(id);
-    var raw;
+  const _CreateData = async () => {
+    console.log("=========run")
+    const raw = JSON.stringify({
+      IDNguoiTao: 20015,
+      IDUser: 20015,
+      NoiDungTin: NoiDung,
+      TrangThai: "TGKHOITAO",
+      duongDan: DuongDan,
+      fileUpload: FileUp,
+      idChuongTrinh: chuongTrinh,
+      idNguoiXuLy: 20015,
+      idTacGia: tacGia.toString(), 
+      idTheLoai: theLoai,
+      maLinhVuc: maLV.toString(),
+      quayPhim: quayPhim.toString(),
+      tieuDeTin: TieuDe
+    });
+    console.log(raw)
     return fetch(
-
-      `https://testsoft.tayninh.gov.vn/api/BanTin/DeleteBanTin?IDUser=20015&iD=${id}`,
-
+      `https://testsoft.tayninh.gov.vn/api/BanTin/CreateBanTin`,
       {
         method: "POST",
         headers: {
@@ -317,39 +298,40 @@ export default function DetailList({ route, navigation }) {
           Authorization:
             "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6IjIwMDE1IiwidW5pcXVlX25hbWUiOiJOZ3V54buFbiBWxINuIFZpw6puIiwicm9sZSI6InBob25ndmllbiIsIm5iZiI6MTY4MjI2MDgwNCwiZXhwIjoxNjgyNDMzNjA0LCJpYXQiOjE2ODIyNjA4MDR9.EUpAl2aCT8J_2wtyQxxCXMPtYlhNVrYCT9SisRl0Y_Q",
         },
-        body: raw,
+        body: raw
       }
     )
       .then((response) => response.json())
       .then((result) => {
+        setDataList(result.data);
+        console.log(result);
+        if (result.success) {
+          setDataList(result.data);
+          Toast.show({
+            color: "#ffffff",
+            backgroundColor: "#0B5181",
+            fontWeight: "800",
+            description: 'Thêm sản phẩm thành công!',
+            marginBottom: "10"
+          });
+        } else {
+          Toast.show({
+            color: "#ffffff",
+            backgroundColor: "#FF0000",
+            fontWeight: "800",
+            description: 'Thêm sản phẩm không thành công!',
+            marginBottom: "10"
+          });
+        }
+
+
+
       })
       .catch((error) => console.log("error", error));
   };
 
   return (
-    <>
-      <AlertDialog leastDestructiveRef={cancelSend} isOpen={isOpenSend} onClose={onCloseSend}>
-        <AlertDialog.Content>
-          <AlertDialog.CloseButton />
-          <AlertDialog.Header>Gửi sản phẩm</AlertDialog.Header>
-          <AlertDialog.Body>
-            <Text>Xác nhận gửi sản phẩm cho thư ký biên tập ? (lưu ý: sản phẩm đã gửi đi sẽ không thể lấy lại)
-            </Text>
-            <Text paddingTop={2} color="#22A7E4">- Gửi thư ký biên tập -</Text>
-          </AlertDialog.Body>
-          <AlertDialog.Footer>
-            <Button.Group space={2}>
-              <Button colorScheme="red" onPress={onCloseSend} ref={cancelSend}>
-                Đóng
-              </Button>
-              <Button colorScheme="darkBlue" onPress={onCloseSend}>
-                Gửi
-              </Button>
-            </Button.Group>
-          </AlertDialog.Footer>
-        </AlertDialog.Content>
-      </AlertDialog>
-
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <IconButton
           icon={<Icon as={AntDesign} name="arrowleft" size={7} color="white" />}
@@ -368,7 +350,7 @@ export default function DetailList({ route, navigation }) {
           }}
 
         />
-        <Text style={styles.headerTitle}>Chi tiết sản phẩm</Text>
+        <Text style={styles.headerTitle}>Tạo mới sản phẩm</Text>
 
         <View
           style={{
@@ -377,12 +359,9 @@ export default function DetailList({ route, navigation }) {
             alignItems: "center",
           }}
         >
-
-
-
           <Menu w="160" shouldOverlapWithTrigger={shouldOverlapWithTrigger}
             placement={position == "auto" ? undefined : position} trigger={triggerProps => {
-              return <IconButton style={{ marginLeft: 45 }} icon={<Icon as={Entypo} name="dots-three-vertical" size={5} color="white" />}
+              return <IconButton icon={<Icon as={AntDesign} name="addfile" size={5} color="white" />}
                 borderRadius="50"
                 _icon={{
                   size: "xl",
@@ -392,315 +371,267 @@ export default function DetailList({ route, navigation }) {
                 }} _pressed={{
                   bg: 'coolGray.800:alpha.20',
                 }} {...triggerProps}>
-
               </IconButton>;
             }}>
-            <Menu.Item
-              onPress={() =>
-                navigation.navigate("Edit", {
-                  id: id,
-                })
-              }
-            >
-              <Feather name="edit" size={18} color="#0B5181" /><Text style={{ marginLeft: 2, color: "#0B5181" }}>Chỉnh sửa</Text>
-            </Menu.Item>
-            <Menu.Item onPress={() => setisOpenSend(!isOpenSend)}>
-              <Feather name="send" size={19} color="#0B5181" /><Text style={{ marginLeft: 2, color: "#0B5181" }}>Gửi tin</Text>
-            </Menu.Item>
-            <Menu.Item onPress={() => setIsOpen(!isOpen)}>
-              <AntDesign name="delete" size={18} color="red" /><Text style={{ marginLeft: 2, color: "red" }}>Xoá tin</Text>
-            </Menu.Item>
+            <Menu.Item>Đính kèm tệp</Menu.Item>
           </Menu>
 
-
-          <AlertDialog
-            leastDestructiveRef={cancelRef}
-            isOpen={isOpen}
-            onClose={onClose}
-            motionPreset={"fade"}
-          >
-            <AlertDialog.Content>
-              <AlertDialog.Body>
-                <Text>
-                  <Ionicons name="warning-outline" size={20} color="red" /> Bạn
-                  có chắc chắn muốn xoá đối tượng này?
-                </Text>
-              </AlertDialog.Body>
-              <AlertDialog.Footer>
-                <Button ref={cancelRef} colorScheme="red" onPress={onClose}>
-                  Đóng
-                </Button>
-                <Button colorScheme="darkBlue"
-                  onPress={() => {
-                    _deleteData(id);
-                    navigation.navigate('List');
-                    Toast.show({
-                      color: "#ffffff",
-                      backgroundColor: "#E53D30",
-                      fontWeight: "bold",
-                      description: 'Xoá sản phẩm thành công!',
-                      marginBottom: "10"
-                    });
-                  }}
-                  ml={3}>
-                  Đồng ý
-                </Button>
-              </AlertDialog.Footer>
-            </AlertDialog.Content>
-          </AlertDialog>
-
+          <IconButton
+            icon={<Icon as={Ionicons} name="add-circle-outline" size={6} color="white" />}
+            borderRadius="50"
+            _icon={{
+              size: "xl",
+            }}
+            _hover={{
+              bg: 'coolGray.800:alpha.20'
+            }} _pressed={{
+              bg: 'coolGray.800:alpha.20',
+            }}
+            onPress={() => {
+              _CreateData();
+              navigation.navigate('List');
+            }}
+          />
         </View>
       </View>
 
-      <Center backgroundColor="white" style={{ flex: 1 }}>
-        {!dataList && !dataTheLoai && (
-          <VStack
-            w="100%"
-            maxW="500"
-            space={6}
-            overflow="hidden"
+      <ScrollView>
+        <Box marginTop={2} marginLeft={1} width="100%" height="100%">
+          <VStack width="350">
+            <Text fontSize={16} bold>
+              <Text color="red.500">*</Text> Tiêu đề tin:
+            </Text>
+            <TextArea
+              h={60}
+              mb="3"
+              w="100%"
+              fontSize="15"
+              marginLeft="2"
+              variant="underlined"
+              placeholder="Nhập tiêu đề tin..."
+              style={{ marginLeft: 5 }}
+              // defaultValue={dataList[0].tieuDeTin}
+              value={TieuDe}
+              onChangeText={setTieuDeTin}
 
-            rounded="md"
-            _dark={{
-              borderColor: "coolGray.500",
-            }}
-            _light={{
-              borderColor: "coolGray.200",
-            }}
+            />
+            <Text fontSize={16} bold>
+              <Text color="red.500">*</Text> Chương trình:
+            </Text>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              iconStyle={styles.iconStyle}
+              data={dataChuongTrinh}
+              maxHeight={300}
+              labelField="label"
+              valueField="value"
+              placeholder="Chọn chương trình"
+              value={chuongTrinh}
+              onChange={(item) => {
+                setchuongTrinh(item.value)
 
-          >
-            <Skeleton.Text px="4" />
-            <Skeleton.Text px="4" />
-            <Skeleton.Text px="4" />
-            <Skeleton.Text px="4" />
-            <Skeleton.Text px="4" />
-            <Skeleton.Text px="4" />
-            <Skeleton.Text px="4" />
+              }}
+
+            />
+            <Text fontSize={16} bold marginTop={3}>
+              <Text color="red.500">*</Text> Thể loại:
+            </Text>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              iconStyle={styles.iconStyle}
+              data={dataTheLoai}
+              search
+              searchPlaceholder="Tìm kiếm..."
+              maxHeight={300}
+              labelField="label"
+              valueField="value"
+              placeholder="Chọn thể loại"
+              value={theLoai}
+              onChange={(item) => {
+                settheLoai(item.value)
+
+              }}
+            />
+
+            <Text fontSize={16} bold marginTop={3}>
+              <Text color="red.500">*</Text> Lĩnh vực:
+            </Text>
+            <MultiSelect
+              style={styles.dropdownLV}
+              placeholderStyle={styles.placeholderStyleLV}
+              selectedTextStyle={styles.selectedTextStyleLV}
+              inputSearchStyle={styles.inputSearchStyleLV}
+              iconStyle={styles.iconStyleLV}
+              search
+              data={LinhVuc}
+              labelField="label"
+              valueField="value"
+              placeholder="Chọn lĩnh vực"
+              searchPlaceholder="Tìm kiếm..."
+              value={maLV}
+              onChange={(item) => {
+                setmaLV(item);
+                setcreateData({ ...createData, maLinhVuc: item });
+
+              }}
+              selectedStyle={styles.selectedStyleLV}
+            />
+
+
+            <Text fontSize={16} marginLeft={3} marginTop={3} bold>
+              Người thực hiện:
+            </Text>
+            <MultiSelect
+              style={styles.dropdownLV}
+              placeholderStyle={styles.placeholderStyleLV}
+              selectedTextStyle={styles.selectedTextStyleLV}
+              inputSearchStyle={styles.inputSearchStyleLV}
+              iconStyle={styles.iconStyleLV}
+              search
+              data={dataNguoiThucHien}
+              labelField="label"
+              valueField="value"
+              placeholder="Chọn người thực hiện"
+              searchPlaceholder="Tìm kiếm..."
+              value={tacGia}
+              onChange={(item) => {
+                settacGia(item)
+                setcreateData({ ...createData, idTacGia: item });
+
+              }}
+              selectedStyle={styles.selectedStyleLV}
+            />
+
+            <Text fontSize={16} marginLeft={3} bold marginTop={3}>
+              Quay phim:
+            </Text>
+            <MultiSelect
+              style={styles.dropdownLV}
+              placeholderStyle={styles.placeholderStyleLV}
+              selectedTextStyle={styles.selectedTextStyleLV}
+              inputSearchStyle={styles.inputSearchStyleLV}
+              iconStyle={styles.iconStyleLV}
+              search
+              data={dataNguoiThucHien}
+              labelField="label"
+              valueField="value"
+              placeholder="Chọn quay phim"
+              searchPlaceholder="Tìm kiếm..."
+              value={quayPhim}
+              onChange={(item) => {
+                setquayPhim(item)
+                setcreateData({ ...createData, quayPhim: item });
+              }}
+              selectedStyle={styles.selectedStyleLV}
+            />
+            <Text fontSize={16} marginLeft={2} marginTop={3} bold>
+              {" "}
+              Đường dẫn media:
+            </Text>
+
+            <Input
+              mb="3"
+              w="100%"
+              // mt={0}
+              fontSize="15"
+              marginLeft="2"
+              variant="underlined"
+              placeholder="Nhập đường dẫn..."
+              style={{ marginLeft: 5 }}
+              value={DuongDan} onChangeText={setDuongDan}
+
+            />
+
+            <Text fontSize={16} marginLeft={2} marginTop={1} bold>
+              <Text color="red.500"></Text> Tệp đính kèm:
+            </Text>
+            <TextArea
+              h={50}
+              mb="3"
+              w="100%"
+              // mt={0}
+              fontSize="15"
+              marginLeft="2"
+              variant="underlined"
+              placeholder="Tệp đính kèm.."
+              style={{ marginLeft: 5 }}
+              value={FileUp}
+              onChangeText={setfileUpload}
+            />
+
+
+            <Text fontSize={16} marginLeft={4} bold marginTop={1}>
+              Nội dung tin:
+            </Text>
+            <TextArea
+              h={60}
+              mb="3"
+              w="100%"
+              fontSize="15"
+              marginLeft="2"
+              variant="underlined"
+              placeholder="Nhập tiêu đề tin..."
+              style={{ marginLeft: 5 }}
+              value={NoiDung}
+              onChangeText={setNoiDungTin}
+
+            />
+            {/* <View style={styles.richTextContainer}>
+              <RichEditor
+                ref={richText}
+                onChange={richTextHandle}
+                placeholder="Nhập nội dung..."
+                androidHardwareAccelerationDisabled={true}
+                style={styles.richTextEditorStyle}
+                initialHeight={250}
+                renderItem={({ item }) => (
+                  <RenderHtml
+                    contentWidth={width}
+                    source={{ html: dataList[0].noiDungTin }}
+                  />
+                )}
+              />
+
+              <RichToolbar
+                editor={richText}
+                selectedIconTint="#873c1e"
+                iconTint="#312921"
+                actions={[
+                  actions.undo,
+                  actions.redo,
+                  actions.setBold,
+                  actions.setUnderline,
+                  actions.setItalic,
+                  actions.alignLeft,
+                  actions.alignCenter,
+                  actions.alignRight,
+                  actions.alignFull,
+                  actions.insertBulletsList,
+                  actions.insertOrderedList,
+                  actions.outdent,
+                  actions.indent,
+                  actions.insertLink,
+                  actions.removeFormat,
+                ]}
+                style={styles.richTextToolbarStyle}
+              />
+            </View> */}
+
+
+
+
           </VStack>
-        )}
-        {/* Da co du lieu */}
-        {dataList && dataList.length > 0 && !isEditing && (
-          <FlatList
-
-            data={dataList}
-            onRefresh={onRefresh}
-            refreshing={isRefreshing}
-            width="100%"
-            renderItem={({ item }) => {
-              let maLV = item?.maLinhVuc;
-              let mang = maLV.split(',');
-              let ketqua = "";
-
-              for (let i = 0; i < mang.length; i++) {
-                for (let j = 0; j < LinhVuc.length; j++) {
-                  if (mang[i] === LinhVuc[j].value) {
-                    if (ketqua !== "") {
-                      ketqua += ", ";
-                    }
-                    ketqua += LinhVuc[j].label;
-                    break;
-                  }
-                }
-              }
-              let maNTH = item?.idTacGia;
-              // console.log(item.idUser)
-              let labelMaNTH = ""
-              if (maNTH !== undefined) {
-                const newMang = maNTH.toString()
-                let mangMaNTH = newMang.split(',');
-                for (let i = 0; i < mangMaNTH.length; i++) {
-                  for (let j = 0; j < dataNguoiThucHien.length; j++) {
-                    if (mangMaNTH[i] === dataNguoiThucHien[j].value) {
-                      if (labelMaNTH !== "") {
-                        labelMaNTH += ", ";
-                      }
-                      labelMaNTH += dataNguoiThucHien[j].label;
-                      break;
-                    }
-                    else {
-                      // console.log('nodata')
-                    }
-                  }
-                }
-              }
-              let PersonFilm = item?.quayPhim;
-              // console.log(item.idUser)
-              let labelPersonFilm = ""
-              if (PersonFilm !== undefined) {
-                const newMang = PersonFilm.toString()
-                let mangMaNTH = newMang.split(',');
-                for (let i = 0; i < mangMaNTH.length; i++) {
-                  for (let j = 0; j < dataNguoiThucHien.length; j++) {
-                    if (mangMaNTH[i] === dataNguoiThucHien[j].value) {
-                      if (labelPersonFilm !== "") {
-                        labelPersonFilm += ", ";
-                      }
-                      labelPersonFilm += dataNguoiThucHien[j].label;
-                      break;
-                    }
-
-                  }
-                }
-              }
-              return (
-                <>
-                  <Box padding="2" width="100%" height="100%">
-                    <VStack marginLeft="1">
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Tiêu đề tin:&nbsp;</Text>
-                        {dataList[0].tieuDeTin}
-                      </Text>
-
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Chương trình: </Text>
-                        <Text>
-                          {dataChuongTrinh.map((i) => {
-                            if (i.value === item.idChuongTrinh) return i.label;
-                          })}
-                        </Text>
-                      </Text>
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Thể loại:&nbsp;</Text>
-                        <Text>
-                          {dataTheLoai.map((i) => {
-                            if (i.value === item.idTheLoai) return i.label;
-                          })}
-                        </Text>
-                      </Text>
-
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Lĩnh vực:&nbsp;</Text>
-                        <Text>
-                          {ketqua}
-                        </Text>
-
-                      </Text>
-
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Người thực hiện:&nbsp;</Text>
-                        {labelMaNTH}
-                      </Text>
-
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Quay phim:&nbsp;</Text>
-                        {labelPersonFilm}
-                      </Text>
-
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Ngày tạo:&nbsp;</Text>
-                        {Moment(dataList[0].ngayTao).format("DD/MM/YYYY")}
-                      </Text>
-
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Tệp đính kèm:&nbsp;</Text>
-                        {dataList[0].fileUpload}
-                      </Text>
-
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Đường dẫn:&nbsp;</Text>
-                        {dataList[0].duongDan}
-                      </Text>
-                      <Divider my={2} />
-                      <Text
-                        fontSize="md"
-                        _dark={{
-                          color: "warmGray.50",
-                        }}
-                        color="coolGray.800"
-                      >
-                        <Text bold>Nội dung tin:&nbsp;</Text>
-                      </Text>
-                      <RenderHtml
-                        contentWidth={width}
-                        source={{ html: dataList[0].noiDungTin }}
-                      />
-                    </VStack>
-                  </Box>
-                </>
-              )
-            }}
-          />
-        )}
-
-      </Center>
-
-    </>
-
+        </Box>
+      </ScrollView>
+    </SafeAreaView>
   );
-
 }
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    height: "100%",
-    backgroundColor: "#ccaf9b",
-    padding: 20,
-    alignItems: "center",
-  },
-  containerHeader: {
     flex: 1,
     backgroundColor: "#fff",
   },
@@ -716,7 +647,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 18,
     color: "#ffffff",
-    marginRight: 79,
+    marginRight: 50,
   },
   Title: {
     fontWeight: "bold",
@@ -727,35 +658,44 @@ const styles = StyleSheet.create({
     marginLeft: 260,
     borderRadius: 50,
   },
-  // containerDropDown: {
-  //   paddingTop: 30,
-  //   marginLeft: 20,
-  //   marginRight: 20,
-  //   flex: 1,
-  //   flexDirection: "column",
-  //   height: "100%",
-  // },
-
-  headerStyle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#312921",
-    marginBottom: 10,
+  TitleSeen: {
+    fontWeight: "bold",
+    fontSize: 18,
+    color: "#22A7E4",
+    width: 100,
+    marginTop: -40,
+    marginLeft: 10,
+    borderRadius: 50,
   },
-
-  htmlBoxStyle: {
-    height: 200,
-    width: 330,
+  empty: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  item: {
     backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 10,
+    padding: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#ccc",
   },
-
+  title: {
+    fontWeight: "bold",
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  content: {
+    fontSize: 14,
+    color: "#666",
+  },
   richTextContainer: {
     display: "flex",
     flexDirection: "column-reverse",
     width: "100%",
+    marginLeft: 2,
     marginBottom: 10,
     marginTop: 20,
   },
@@ -778,47 +718,16 @@ const styles = StyleSheet.create({
 
   richTextToolbarStyle: {
     backgroundColor: "#f2f2f2",
-    borderColor: "#6FBFEB",
+    borderColor: "#f2f2f2",
+
     // borderTopLeftRadius: 10,
     // borderTopRightRadius: 10,
     // borderWidth: 1,
   },
-
-  errorTextStyle: {
-    color: "#FF0000",
-    marginBottom: 10,
-  },
-
-  saveButtonStyle: {
-    backgroundColor: "#c6c3b3",
-    borderWidth: 1,
-    borderColor: "#c6c3b3",
-    borderRadius: 10,
-    padding: 10,
-    width: "25%",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.23,
-    shadowRadius: 2.62,
-    elevation: 4,
-    fontSize: 20,
-  },
-
-  textButtonStyle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#312921",
-  },
-  //
   dropdown: {
     height: 50,
     backgroundColor: 'transparent',
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#ADADAD',
     borderBottomWidth: 0.5,
     marginLeft: 7
   },
@@ -828,6 +737,7 @@ const styles = StyleSheet.create({
   },
   placeholderStyle: {
     fontSize: 15,
+    marginLeft: 5
   },
   inputSearchStyle: {
     height: 40,
@@ -839,6 +749,7 @@ const styles = StyleSheet.create({
   },
   selectedTextStyle: {
     fontSize: 15,
+    marginLeft:10
   },
 
   ////
@@ -876,11 +787,15 @@ const styles = StyleSheet.create({
   },
   placeholderStyleLV: {
     fontSize: 15,
+    marginLeft: 6,
   },
   selectedTextStyleLV: {
     fontSize: 13,
     marginHorizontal: 5,
     color: "#ffffff",
+
+
+
   },
   iconStyleLV: {
     width: 20,

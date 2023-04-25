@@ -1,22 +1,54 @@
 import React, { useEffect, useState, useMemo } from "react";
 import {
-  FlatList, Text, Select, CheckIcon, Button
+  FlatList, Text, Select, CheckIcon, Button, IconButton, Modal, FormControl
 } from "native-base";
 import { AntDesign } from '@expo/vector-icons';
 import { StyleSheet, TextInput, View } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
+import { Dropdown, MultiSelect } from "react-native-element-dropdown";
 
 
 
+export default function SearchComponent({ onSearchEnter, navigation }) {
 
-const SearchComponent = ({ onSearchEnter }) => {
+  const [placement, setPlacement] = useState(undefined);
+  const [open, setOpen] = useState(false);
+
+  const openModal = placement => {
+    setOpen(true);
+    setPlacement(placement);
+  };
+  const TheLoai = [
+    { value: 7, label: "Ghi nhanh" },
+    { value: 9, label: "Tin trong tỉnh" },
+    { value: 10, label: "Tin trong nước" },
+    { value: 18, label: "Tin thế giới" },
+    { value: 19, label: "Phóng sự" },
+    { value: 22, label: "Hình hiệu" },
+    { value: 23, label: "Quay phim" },
+    { value: 24, label: "Đoạn dẫn" },
+    { value: 25, label: "Chuyên mục" },
+    { value: 26, label: "Tin có phát biểu" },
+    { value: 27, label: "Bài phản ánh" },
+    { value: 28, label: "Phỏng vấn" },
+  ];
+
+  const dataChuongTrinh = [
+    { value: 101, label: "Phát thanh" },
+    { value: 102, label: "Truyền hình" },
+  ];
+  const [dataList, setDataList] = useState([]);
   const [searchData, setSearchData] = useState([]);
   const [selectedCT, setSelectedCT] = useState("");
-  const [isShow, setisShow] = useState(true);
+  const [selectedTheLoai, setSelectedTheLoai] = useState("");
+  const [selectedChuongTrinh, setSelectedChuongTrinh] = useState([]);
+  const page = 20;
+  const current = 1;
+  const idUser = 20015;
 
- const _fetchData = async () => {
+  const _fetchData = async () => {
     return fetch(
-      `https://testsoft.tayninh.gov.vn/api/BanTin/GetBanTin?current=${current}&idChuongTrinh=${selectedCT}&pageSize=${page}&Menu=DANGSOAN&tieuDeTin=${searchData}&IDUser=${idUser}`,
+      `https://testsoft.tayninh.gov.vn/api/BanTin/GetBanTin?current=${current}&idChuongTrinh=${selectedCT}&idTheLoai=${selectedTheLoai}&pageSize=${page}&Menu=DANGSOAN&tieuDeTin=${searchData}&IDUser=${idUser}`,
       {
         method: "POST",
         headers: {
@@ -30,8 +62,6 @@ const SearchComponent = ({ onSearchEnter }) => {
       .then((response) => response.json())
       .then((result) => {
         setDataList(result.data);
-        setIsCallApi(true);
-        setKetqua(ketqua);
       })
       .catch((error) => console.log("error", error));
   };
@@ -39,6 +69,10 @@ const SearchComponent = ({ onSearchEnter }) => {
   const onRefresh = () => {
     _fetchData();
   };
+
+  useEffect(() => {
+    _fetchData();
+  }, [])
 
   return (
     <View>
@@ -57,73 +91,113 @@ const SearchComponent = ({ onSearchEnter }) => {
           }}
 
         />
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            alignItems: "center",
 
-        <Icon
-          size={19}
-          name="close"
-          color="white"
-          style={styles.iconStyle}
-          onPress={() => {
-            setSearchData("");
-            onSearchEnter("");
           }}
-        />
+        >
+          <IconButton
+            icon={<Icon as={Icon} name="close" size={20} color="white" />}
+            borderRadius="50"
 
-        <AntDesign
-          onPress={() => {
-            setisShow(!isShow);
-          }}
-          style={styles.iconStyle} name="filter" size={19} color="white" />
+            _hover={{
+              bg: 'coolGray.800:alpha.20'
+            }} _pressed={{
+              bg: 'coolGray.800:alpha.20',
+            }}
+            onPress={() => {
+              setSearchData("");
+              onSearchEnter("");
+            }}
 
+          />
 
+          <IconButton
+            icon={<AntDesign name="filter" size={20} color="white" />}
+            borderRadius="50"
+
+            _hover={{
+              bg: 'coolGray.800:alpha.20'
+            }} _pressed={{
+              bg: 'coolGray.800:alpha.20',
+            }}
+            onPress={() => openModal("center")}
+
+          />
+          <Modal isOpen={open} onClose={() => setOpen(false)} safeAreaTop={true}>
+            <Modal.Content maxWidth="350" {...styles[placement]}>
+              <Modal.CloseButton />
+              <Modal.Header>Tìm kiếm theo danh mục</Modal.Header>
+              <Modal.Body>
+                <FormControl>
+                  <Text fontSize={15} style={{ color: "#0B5181" }} bold>
+                    Chương trình: </Text>
+
+                  <Dropdown
+                    style={styles.dropdown}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    iconStyle={styles.iconStyleDrop}
+                    data={dataChuongTrinh}
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Chọn chương trình"
+                    value={selectedChuongTrinh}
+                    onChange={(item) => {
+                      setSelectedChuongTrinh(item.value)
+
+                    }}
+
+                  />
+
+                  <Text fontSize={15} style={{ color: "#0B5181", marginTop: 10 }} bold>
+                    Thể loại: </Text>
+
+                  <Dropdown
+                    style={styles.dropdown}
+                    placeholderStyle={styles.placeholderStyle}
+                    selectedTextStyle={styles.selectedTextStyle}
+                    iconStyle={styles.iconStyleDrop}
+                    data={TheLoai}
+                    maxHeight={300}
+                    labelField="label"
+                    valueField="value"
+                    placeholder="Chọn thể loại"
+                    value={selectedTheLoai}
+                    onChange={(item) => {
+                      setSelectedTheLoai(item.value)
+
+                    }}
+
+                  />
+                </FormControl>
+
+              </Modal.Body>
+              <Modal.Footer>
+                <Button.Group space={2}>
+                  <Button variant="solid" colorScheme="red" onPress={() => {
+                    setOpen(false);
+                  }}>
+                    Đóng
+                  </Button>
+                  <Button colorScheme="darkBlue" 
+                  onPress={() => {
+                    _fetchData();
+                    setOpen(false);
+                  }}>
+                    Tìm
+                  </Button>
+                </Button.Group>
+              </Modal.Footer>
+            </Modal.Content>
+          </Modal>
+        </View>
       </View>
-      {
-        isShow ?
-          <View backgroundColor="#ffffff" height={100}>
-            <Text style={styles.theloaiStyle}>Chương trình</Text>
-            <View style={styles.selectStyle}>
-              <Select borderRadius={12} minWidth="200" fontSize="14" placeholder="Chọn chương trình" _selectedItem={{
-                bg: "teal.600",
-                endIcon: <CheckIcon size="5" />
-              }}
-                value={selectedCT}
-                onChange={(value) => setSelectedCT(value)}
-              >
-                <Select.Item label="Phát thanh" value="101"
-                />
-                <Select.Item label="Truyền hình" value="102" />
-
-              </Select>
-            </View>
-
-            {/* <View style={styles.selectStyle}>
-              <Text style={styles.chuongtrinhStyle}>Thể loại</Text>
-
-              <Select borderRadius={12} fontSize="14" minWidth="200" accessibilityLabel="Choose Service" placeholder="Chọn thể loại" _selectedItem={{
-                bg: "teal.600",
-                endIcon: <CheckIcon size="5" />
-              }}>
-                <Select.Item label="Tin không có phát biểu" value="2" />
-                <Select.Item label="Tin khai thác lại từ tư liệu có sẵn" value="5" />
-                <Select.Item label="Tin khai thác từ văn bản(tuyên truyền chính sách mới) sử dụng chung cho truyền hình" value="6" />
-                <Select.Item label="Ghi nhanh, ghi nhận người tốt việc tốt" value="7" />
-                <Select.Item label="Bài phản ánh" value="8" />
-                <Select.Item label="Trong tỉnh" value="9" />
-                <Select.Item label="Ngoài tỉnh" value="10" />
-                <Select.Item label="Tin có dẫn hiện trường(Phòng chuyên môn phải có sự thống nhất trước với người có thẩm quyền tại hiện trường)" value="11" />
-                <Select.Item label="Tin có hình ảnh mới, âm thanh hiện trường và phỏng vấn " value="12" />
-                <Select.Item label="Tin có hình ảnh mới, không có phỏng vấn" value="13" />
-                <Select.Item label="Chùm tin (Tổng hợp từ các tin có nội dung tương tự như khai giảng, thăm lực lượng vũ trang,...)" value="12" />
-              </Select>
-
-            </View> */}
-
-          </View>
-          : null
-      }
-
     </View>
-
   );
 };
 
@@ -169,11 +243,36 @@ const styles = StyleSheet.create({
     width: 320,
     paddingTop: 10,
     marginLeft: 20,
+  },
+  dropdown: {
+    height: 50,
+    backgroundColor: 'transparent',
+    borderBottomColor: '#ADADAD',
+    borderBottomWidth: 0.5,
 
+  },
 
+  icon: {
+    marginRight: 5,
+  },
+  placeholderStyle: {
+    fontSize: 15,
 
+  },
+  inputSearchStyle: {
+    height: 40,
+    fontSize: 16,
 
-  }
+  },
+  iconStyleDrop: {
+    width: 20,
+    height: 20,
+  },
+  selectedTextStyle: {
+    fontSize: 15,
+
+  },
+
 });
 
-export default SearchComponent;
+

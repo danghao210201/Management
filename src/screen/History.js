@@ -20,8 +20,7 @@ import {
     const page = 20;
     const current = 1;
     const idUser = 20015;
-    const maLinhVuc = null;
-  
+
     const dataTheLoai = [
       { value: 7, label: "Ghi nhanh" },
       { value: 9, label: "Tin trong tỉnh" },
@@ -106,19 +105,6 @@ import {
       _fetchData();
     };
   
-    // const renderPosts = ({ item }) => {
-    //   return (
-  
-    //     dataList && dataList.length > 0 && (
-    //       <View style={styles.itemWrapperStyle}>
-    //         <Text style={styles.itemTitleStyle}>{item.id}. {item.tieuDeTin}</Text>
-    //         <Text style={styles.itemBodyStyle}>{item.trangThai}</Text>
-    //         <Text style={styles.itemBodyStyle}>{item.ngayTao}</Text>
-    //       </View>
-    //     )
-    //   );
-    // };
-  
     useEffect(() => {
       _fetchData(searchData);
     }, [searchData]);
@@ -126,7 +112,7 @@ import {
     //  Hiển thị dữ liệu
     return (
       <>
-        <StatusBar backgroundColor="#22A7E4" />
+        <StatusBar backgroundColor="#DD581B" />
         <View style={styles.container}>
           <View>
             <SearchComponent
@@ -165,7 +151,7 @@ import {
                   <>
                     <TouchableOpacity
                       onPress={() =>
-                        navigation.navigate("Detail", {
+                        navigation.navigate("DetailHistory", {
                           id: item.id,
                         })
                       }

@@ -6,11 +6,12 @@ import {
   Button,
   VStack,
   Box,
-  HStack,
+  HStack, Modal
 } from "native-base";
 import React, { useEffect, useState } from "react";
 import { StatusBar, StyleSheet, View, TouchableOpacity, Alert, Image } from "react-native";
 import Moment from "moment";
+import { useRoute } from '@react-navigation/native';
 import SearchComponent from '../component/SearchComponent'
 
 export default function List({ navigation }) {
@@ -56,9 +57,16 @@ export default function List({ navigation }) {
     { value: "1012", label: "Đảng Cộng sản Việt Nam" },
   ]
 
+  const route = useRoute();
+  const message = route.params?.message;
+  const [showMessage, setShowMessage] = useState(false);
   const [searchData, setSearchData] = useState([]);
   const [err, setErr] = useState([]);
-  const [selectedCT, setSelectedCT] = useState("");
+  const [selectedTheLoai, setSelectedTheLoai] = useState([]);
+  const [selectedChuongTrinh, setSelectedChuongTrinh] = useState([]);
+  const [selectedThucHien, setselectedThucHien] = useState([]);
+  const [selectedQuayPhim, setselectedQuayPhim] = useState([]);
+  const [selectedLinhVuc, setselectedLinhVuc] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isCallApi, setIsCallApi] = useState(false);
   const [ketqua, setKetqua] = useState('');
@@ -72,15 +80,25 @@ export default function List({ navigation }) {
           Accept: "application/json",
           "Content-Type": "application/json",
           Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6IjIwMDE1IiwidW5pcXVlX25hbWUiOiJOZ3V54buFbiBWxINuIFZpw6puIiwicm9sZSI6InBob25ndmllbiIsIm5iZiI6MTY4MTQzNjAyMSwiZXhwIjoxNjgxNjA4ODIxLCJpYXQiOjE2ODE0MzYwMjF9.-uva2eXbNyoxQwHwdMh3SBqg2kvRXWAjpDEok-wGAEQ",
+            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6IjIwMDE1IiwidW5pcXVlX25hbWUiOiJOZ3V54buFbiBWxINuIFZpw6puIiwicm9sZSI6InBob25ndmllbiIsIm5iZiI6MTY4MjI2MDgwNCwiZXhwIjoxNjgyNDMzNjA0LCJpYXQiOjE2ODIyNjA4MDR9.EUpAl2aCT8J_2wtyQxxCXMPtYlhNVrYCT9SisRl0Y_Q",
         },
       }
     )
+
+
       .then((response) => response.json())
       .then((result) => {
         setDataList(result.data);
         setIsCallApi(true);
         setKetqua(ketqua);
+        setSelectedTheLoai(result.data[0].idTheLoai);
+        setSelectedChuongTrinh(result.data[0].idChuongTrinh);
+        setselectedLinhVuc(result.data[0].maLinhVuc);
+        setselectedThucHien(result.data[0].idTacGia);
+        setselectedQuayPhim(result.data[0].quayPhim);
+
+
+
       })
       .catch((error) => console.log("error", error));
   };
@@ -90,14 +108,15 @@ export default function List({ navigation }) {
   };
 
   useEffect(() => {
-    _fetchData();
-  }, []);
+    _fetchData(searchData);
+  }, [searchData]);
 
   return (
     <>
-      <StatusBar backgroundColor="#22A7E4" />
+
+      <StatusBar backgroundColor="#DD581B" />
+
       <View style={styles.container}>
-     
         <View>
           <SearchComponent
             onSearchEnter={(newTerm) => {
@@ -106,8 +125,7 @@ export default function List({ navigation }) {
             }}
           />
         </View>
-        
-      
+
         {dataList.length !== 0 && isCallApi ? (
           <FlatList
             backgroundColor="#ffffff"
@@ -182,14 +200,16 @@ export default function List({ navigation }) {
                         </VStack>
                       </HStack>
                     </Box>
+
                   </TouchableOpacity>
-                
+
+                 
                 </>
               )
             }}
-            
+
           />
-          
+
         ) : (
           <Text style={{ color: "red", marginLeft: 110, paddingTop: 10 }}>
             Không tìm thấy bản tin!
@@ -199,12 +219,13 @@ export default function List({ navigation }) {
       <View>
         <TouchableOpacity activeOpacity={0.5}
           onPress={() =>
-            navigation.navigate("Crud", {})
+            navigation.navigate("Create", {})
           }
           style={styles.TouchableOpacityStyle} >
           <Image source={require('../component/images/button_png.png')} style={styles.FloatingButtonStyle} />
         </TouchableOpacity>
       </View>
+
     </>
   );
 }

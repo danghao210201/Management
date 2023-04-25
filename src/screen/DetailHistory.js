@@ -39,7 +39,7 @@ import { Dropdown, MultiSelect } from "react-native-element-dropdown";
 
 
 
-export default function DetailList({ route, navigation }) {
+export default function DetailHistory({ route, navigation }) {
   const { id } = route.params;
   // First Run
   const [dataList, setDataList] = useState(null);
@@ -237,8 +237,6 @@ export default function DetailList({ route, navigation }) {
     _getTheLoai();
   }, [navigation]);
 
-
-
   const _getTheLoai = async () => {
     return fetch(
       `https://testsoft.tayninh.gov.vn/api/TheLoai/GetTheLoai`,
@@ -266,7 +264,7 @@ export default function DetailList({ route, navigation }) {
   const _fetchData = async () => {
 
     return fetch(
-      `https://testsoft.tayninh.gov.vn/api/BanTin/GetBanTin?current=${current}&IDUser=${idUser}&pageSize=${page}&Menu=DANGSOAN&ID=${JSON.stringify(
+      `https://testsoft.tayninh.gov.vn/api/BanTin/GetBanTin?current=${current}&IDUser=${idUser}&pageSize=${page}&Menu=DAGUI&ID=${JSON.stringify(
         id
       )}`,
       {
@@ -301,55 +299,8 @@ export default function DetailList({ route, navigation }) {
       });
   };
 
-
-  const _deleteData = async (id) => {
-    // console.log(id);
-    var raw;
-    return fetch(
-
-      `https://testsoft.tayninh.gov.vn/api/BanTin/DeleteBanTin?IDUser=20015&iD=${id}`,
-
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJZCI6IjIwMDE1IiwidW5pcXVlX25hbWUiOiJOZ3V54buFbiBWxINuIFZpw6puIiwicm9sZSI6InBob25ndmllbiIsIm5iZiI6MTY4MjI2MDgwNCwiZXhwIjoxNjgyNDMzNjA0LCJpYXQiOjE2ODIyNjA4MDR9.EUpAl2aCT8J_2wtyQxxCXMPtYlhNVrYCT9SisRl0Y_Q",
-        },
-        body: raw,
-      }
-    )
-      .then((response) => response.json())
-      .then((result) => {
-      })
-      .catch((error) => console.log("error", error));
-  };
-
   return (
     <>
-      <AlertDialog leastDestructiveRef={cancelSend} isOpen={isOpenSend} onClose={onCloseSend}>
-        <AlertDialog.Content>
-          <AlertDialog.CloseButton />
-          <AlertDialog.Header>Gửi sản phẩm</AlertDialog.Header>
-          <AlertDialog.Body>
-            <Text>Xác nhận gửi sản phẩm cho thư ký biên tập ? (lưu ý: sản phẩm đã gửi đi sẽ không thể lấy lại)
-            </Text>
-            <Text paddingTop={2} color="#22A7E4">- Gửi thư ký biên tập -</Text>
-          </AlertDialog.Body>
-          <AlertDialog.Footer>
-            <Button.Group space={2}>
-              <Button colorScheme="red" onPress={onCloseSend} ref={cancelSend}>
-                Đóng
-              </Button>
-              <Button colorScheme="darkBlue" onPress={onCloseSend}>
-                Gửi
-              </Button>
-            </Button.Group>
-          </AlertDialog.Footer>
-        </AlertDialog.Content>
-      </AlertDialog>
-
       <View style={styles.header}>
         <IconButton
           icon={<Icon as={AntDesign} name="arrowleft" size={7} color="white" />}
@@ -364,7 +315,7 @@ export default function DetailList({ route, navigation }) {
             bg: 'coolGray.800:alpha.20',
           }}
           onPress={() => {
-            navigation.navigate("List")
+            navigation.navigate("History")
           }}
 
         />
@@ -377,77 +328,10 @@ export default function DetailList({ route, navigation }) {
             alignItems: "center",
           }}
         >
+      
 
 
-
-          <Menu w="160" shouldOverlapWithTrigger={shouldOverlapWithTrigger}
-            placement={position == "auto" ? undefined : position} trigger={triggerProps => {
-              return <IconButton style={{ marginLeft: 45 }} icon={<Icon as={Entypo} name="dots-three-vertical" size={5} color="white" />}
-                borderRadius="50"
-                _icon={{
-                  size: "xl",
-                }}
-                _hover={{
-                  bg: 'coolGray.800:alpha.20'
-                }} _pressed={{
-                  bg: 'coolGray.800:alpha.20',
-                }} {...triggerProps}>
-
-              </IconButton>;
-            }}>
-            <Menu.Item
-              onPress={() =>
-                navigation.navigate("Edit", {
-                  id: id,
-                })
-              }
-            >
-              <Feather name="edit" size={18} color="#0B5181" /><Text style={{ marginLeft: 2, color: "#0B5181" }}>Chỉnh sửa</Text>
-            </Menu.Item>
-            <Menu.Item onPress={() => setisOpenSend(!isOpenSend)}>
-              <Feather name="send" size={19} color="#0B5181" /><Text style={{ marginLeft: 2, color: "#0B5181" }}>Gửi tin</Text>
-            </Menu.Item>
-            <Menu.Item onPress={() => setIsOpen(!isOpen)}>
-              <AntDesign name="delete" size={18} color="red" /><Text style={{ marginLeft: 2, color: "red" }}>Xoá tin</Text>
-            </Menu.Item>
-          </Menu>
-
-
-          <AlertDialog
-            leastDestructiveRef={cancelRef}
-            isOpen={isOpen}
-            onClose={onClose}
-            motionPreset={"fade"}
-          >
-            <AlertDialog.Content>
-              <AlertDialog.Body>
-                <Text>
-                  <Ionicons name="warning-outline" size={20} color="red" /> Bạn
-                  có chắc chắn muốn xoá đối tượng này?
-                </Text>
-              </AlertDialog.Body>
-              <AlertDialog.Footer>
-                <Button ref={cancelRef} colorScheme="red" onPress={onClose}>
-                  Đóng
-                </Button>
-                <Button colorScheme="darkBlue"
-                  onPress={() => {
-                    _deleteData(id);
-                    navigation.navigate('List');
-                    Toast.show({
-                      color: "#ffffff",
-                      backgroundColor: "#E53D30",
-                      fontWeight: "bold",
-                      description: 'Xoá sản phẩm thành công!',
-                      marginBottom: "10"
-                    });
-                  }}
-                  ml={3}>
-                  Đồng ý
-                </Button>
-              </AlertDialog.Footer>
-            </AlertDialog.Content>
-          </AlertDialog>
+          
 
         </View>
       </View>
